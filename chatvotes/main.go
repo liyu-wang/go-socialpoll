@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -15,19 +15,15 @@ import (
 
 func main() {
 	// Entry point for the chatvotes application
-	var stoplock sync.Mutex
-	// access from different goroutines
-	stop := false
+	var stopFlag atomic.Bool
 	stopchan := make(chan struct{}, 1)
 	signalChan := make(chan os.Signal, 1)
 
 	// goroutine to handle interrupt signal
 	go func() {
-		// wait for an interrupt signal such as contrlol+C
+		// wait for an interrupt signal such as control+C
 		<-signalChan
-		stoplock.Lock()
-		stop = true
-		stoplock.Unlock()
+		stopFlag.Store(true)
 		log.Println("Stopping...")
 		stopchan <- struct{}{}
 		closeWSConn()
@@ -54,12 +50,9 @@ func main() {
 			log.Println("periodic closer: closing websocket connection to force reconnect")
 			closeWSConn()
 			log.Println("periodic closer: done closing websocket connection")
-			stoplock.Lock()
-			if stop {
-				stoplock.Unlock()
+			if stopFlag.Load() {
 				return
 			}
-			stoplock.Unlock()
 		}
 	}()
 
