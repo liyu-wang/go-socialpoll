@@ -27,3 +27,10 @@ nsqd --lookupd-tcp-address=localhost:4160
 
 mongod --dbpath ./db
 
+ kill -9 $(lsof -t -i:27017)
+
+ sudo lsof -iTCP -sTCP:LISTEN -n -P
+
+ ps aux | grep chatvotes
+ kill -9
+ 
