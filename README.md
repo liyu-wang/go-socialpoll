@@ -13,7 +13,7 @@ go mod init github.com/liyu-wang/go-socialpoll/chatvotes
 
 go get github.com/nsqio/go-nsq@latest
 
-go get go.mongodb.org/mongo-driver/v2/mongo
+go get go.mongodb.org/mongo-driver
 
 ## add chatvotes module to workspace
 
@@ -27,10 +27,21 @@ nsqd --lookupd-tcp-address=localhost:4160
 
 mongod --dbpath ./db
 
- kill -9 $(lsof -t -i:27017)
+## Add options to mongodb via mongo shell
 
- sudo lsof -iTCP -sTCP:LISTEN -n -P
+> mongosh
+> use ballots
+> db.polls.insertOne({"title": "Test poll", "options": ["happy", "sad", "fail", "win"]})
 
- ps aux | grep chatvotes
- kill -9
- 
+## nsq tail to subscribe to topic
+
+> nsq_tail --topic="votes" --lookupd-http-address=localhost:4161
+
+## stop service
+
+> kill -9 $(lsof -t -i:27017)
+
+> sudo lsof -iTCP -sTCP:LISTEN -n -P
+
+> ps aux | grep chatvotes
+> kill -9
