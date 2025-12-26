@@ -12,5 +12,6 @@ require (
 
 require (
 	github.com/golang/snappy v1.0.0 // indirect
+	go.mongodb.org/mongo-driver v1.17.6 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
