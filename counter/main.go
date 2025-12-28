@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nsqio/go-nsq"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -62,4 +63,32 @@ func main() {
 	log.Println("Successfully connected to mongodb")
 
 	pollData := client.Database("ballets").Collection("polls")
+
+	var counts map[string]int
+	var countsLock sync.Mutex
+
+	log.Println("Connecting to nsq...")
+	q, err := nsq.NewConsumer("votes", "counter", nsq.NewConfig())
+	if err != nil {
+		fatal(fmt.Errorf("failed to create nsq consumer: %w", err))
+		return
+	}
+
+	q.AddHandler(nsq.HandlerFunc(func(message *nsq.Message) error {
+		countsLock.Lock()
+		defer countsLock.Unlock()
+		if counts == nil {
+			counts = make(map[string]int)
+		}
+		vote := string(message.Body)
+		counts[vote]++
+		log.Printf("Vote received: %s, total: %d\n", vote, counts[vote])
+		return nil
+	}))
+
+	// Connect to nsqlookupd
+	if err := q.ConnectToNSQLookupd("localhost:4161"); err != nil {
+		fatal(fmt.Errorf("failed to connect to nsq: %w", err))
+		return
+	}
 }
