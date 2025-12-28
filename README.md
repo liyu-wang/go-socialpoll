@@ -40,8 +40,16 @@ mongod --dbpath ./db
 ## stop service
 
 > kill -9 $(lsof -t -i:27017)
-
 > sudo lsof -iTCP -sTCP:LISTEN -n -P
-
 > ps aux | grep chatvotes
 > kill -9
+
+## init counter module and add dependencies
+
+> mkdir counter
+> cd counter
+> go mod init github.com/liyu-wang/go-socialpoll/counter
+> cd ..
+> go work use -r ./counter
+
+go get go.mongodb.org/mongo-driver
