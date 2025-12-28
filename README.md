@@ -19,6 +19,21 @@ go get go.mongodb.org/mongo-driver
 
 go work use -r ./chatvotes
 
+## db design
+
+```json
+{ 
+  "_id": "???", 
+  "title": "Poll title", 
+  "options": ["one", "two", "three"], 
+  "results": { 
+    "one": 100, 
+    "two": 200, 
+    "three": 300 
+  } 
+}
+```
+
 ## start nsq and mongodb
 
 nsqlookupd
@@ -53,3 +68,16 @@ mongod --dbpath ./db
 > go work use -r ./counter
 
 go get go.mongodb.org/mongo-driver
+
+``` json
+{ 
+  "options": { 
+    "$in": ["happy"] 
+  } 
+}
+
+{ 
+  "$inc": { 
+    "results.happy": 3 
+  } 
+}

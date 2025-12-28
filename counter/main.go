@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nsqio/go-nsq"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -62,7 +63,11 @@ func main() {
 	}
 	log.Println("Successfully connected to mongodb")
 
-	pollData := client.Database("ballets").Collection("polls")
+	// Create a separate, non-expiring context for all database operations
+	operationCtx, operationCancel := context.WithCancel(context.Background())
+	defer operationCancel()
+
+	pollData := client.Database("ballots").Collection("polls")
 
 	var counts map[string]int
 	var countsLock sync.Mutex
@@ -90,5 +95,42 @@ func main() {
 	if err := q.ConnectToNSQLookupd("localhost:4161"); err != nil {
 		fatal(fmt.Errorf("failed to connect to nsq: %w", err))
 		return
+	}
+}
+
+func doCount(ctx context.Context, countsLock *sync.Mutex, counts *map[string]int, pollData *mongo.Collection) {
+	countsLock.Lock()
+	defer countsLock.Unlock()
+
+	if len(*counts) == 0 {
+		log.Println("No new votes, skipping database update")
+		return
+	}
+
+	log.Println("Updating database...")
+	log.Println("Current counts:", *counts)
+
+	ok := true
+	for option, count := range *counts {
+		// Create a dedicated timeout context for this operation
+		opCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		// filter to find the poll option
+		sel := bson.M{"options": bson.M{"$in": []string{option}}}
+		log.Printf("Searching with filter: %v", sel)
+
+		// update to increment the vote count
+		up := bson.M{"$inc": bson.M{"results." + option: count}}
+		result, err := pollData.UpdateMany(opCtx, sel, up)
+		if err != nil {
+			log.Printf("Error updating vote count for %s: %v", option, err)
+			ok = false
+		} else {
+			log.Printf("Updated %d documents for option '%s' with count %d", result.ModifiedCount, option, count)
+		}
+		cancel()
+	}
+	if ok {
+		log.Println("Finished updating database...")
+		*counts = nil // reset counts after successful update
 	}
 }
