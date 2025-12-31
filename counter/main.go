@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/nsqio/go-nsq"
@@ -22,6 +24,8 @@ func fatal(e error) {
 	flag.PrintDefaults()
 	fatalErr = e
 }
+
+const updateDuration = 1 * time.Second
 
 func main() {
 	defer func() {
@@ -95,6 +99,25 @@ func main() {
 	if err := q.ConnectToNSQLookupd("localhost:4161"); err != nil {
 		fatal(fmt.Errorf("failed to connect to nsq: %w", err))
 		return
+	}
+
+	// Periodic timer to update database with vote counts
+	ticker := time.NewTicker(updateDuration)
+	termchan := make(chan os.Signal, 1)
+	signal.Notify(termchan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	// Keep the application running
+	for {
+		select {
+		case <-ticker.C:
+			doCount(operationCtx, &countsLock, &counts, pollData)
+		case <-termchan:
+			ticker.Stop()
+			q.Stop()
+		case <-q.StopChan:
+			//finished
+			return
+		}
 	}
 }
 
