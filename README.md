@@ -72,26 +72,24 @@ kill -9 <pid>
 
 ## init counter module and add dependencies
 
-> mkdir counter
-> cd counter
-> go mod init github.com/liyu-wang/go-socialpoll/counter
-> cd ..
-> go work use -r ./counter
+``` bash
+mkdir counter
+cd counter
+go mod init github.com/liyu-wang/go-socialpoll/counter
+cd ..
+go work use -r ./counter
 
 go get go.mongodb.org/mongo-driver
+```
 
-``` json
-{ 
-  "options": { 
-    "$in": ["happy"] 
-  } 
-}
+## init api module
 
-{ 
-  "$inc": { 
-    "results.happy": 3 
-  } 
-}
+``` bash
+mkdir api
+cd api
+go mod init github.com/liyu-wang/go-socialpoll/api
+cd ..
+go work use -r ./api
 ```
 
 ## verify db update
