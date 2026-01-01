@@ -2,22 +2,27 @@
 
 ## init workspace
 
+``` bash
 go work init
+```
 
 ## init module and add dependencies
 
+``` bash
 mkdir chatvotes
 cd chatvotes
 
 go mod init github.com/liyu-wang/go-socialpoll/chatvotes
 
 go get github.com/nsqio/go-nsq@latest
-
 go get go.mongodb.org/mongo-driver
+```
 
 ## add chatvotes module to workspace
 
+``` bash
 go work use -r ./chatvotes
+```
 
 ## db design
 
@@ -36,28 +41,34 @@ go work use -r ./chatvotes
 
 ## start nsq and mongodb
 
+``` bash
 nsqlookupd
-
 nsqd --lookupd-tcp-address=localhost:4160
-
 mongod --dbpath ./db
+```
 
-## Add options to mongodb via mongo shell
+## Add options to mongodb via mongo shell (do this before start the services)
 
-> mongosh
-> use ballots
-> db.polls.insertOne({"title": "Test poll", "options": ["happy", "sad", "fail", "win"]})
+``` bash
+mongosh
+use ballots
+db.polls.insertOne({"title": "Test poll", "options": ["happy", "sad", "fail", "win"]})
+```
 
 ## nsq tail to subscribe to topic
 
-> nsq_tail --topic="votes" --lookupd-http-address=localhost:4161
+``` bash
+nsq_tail --topic="votes" --lookupd-http-address=localhost:4161
+```
 
-## stop service
+## stop service by ports
 
-> kill -9 $(lsof -t -i:27017)
-> sudo lsof -iTCP -sTCP:LISTEN -n -P
-> ps aux | grep chatvotes
-> kill -9
+``` bash
+kill -9 $(lsof -t -i:27017)
+sudo lsof -iTCP -sTCP:LISTEN -n -P
+ps aux | grep chatvotes
+kill -9 <pid>
+```
 
 ## init counter module and add dependencies
 
@@ -81,3 +92,52 @@ go get go.mongodb.org/mongo-driver
     "results.happy": 3 
   } 
 }
+```
+
+## verify db update
+
+``` bash
+mongosh
+use ballots
+db.polls.find().pretty()
+```
+
+## start service
+
+```bash
+./start-services.sh
+```
+
+This will open new Terminal windows for each service:
+
+- nsqlookupd
+- nsqd
+- MongoDB
+- chatvotes application
+- counter application
+
+## stop service
+
+Use the stop script:
+
+```bash
+./stop-services.sh
+```
+
+Or manually:
+
+```bash
+pkill nsqlookupd
+pkill nsqd
+pkill mongod
+pkill -f "chatvotes"
+pkill -f "counter"
+```
+
+Or by PID:
+
+```bash
+kill -9 $(lsof -t -i:27017)  # MongoDB
+kill -9 $(lsof -t -i:4150)   # NSQd
+kill -9 $(lsof -t -i:4160)   # NSQLookupd
+```

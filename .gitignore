@@ -32,3 +32,10 @@ go.work.sum
 # .vscode/
 
 .DS_Store
+
+# MongoDB data directory (nsq meta data)
+data/
+
+# Binaries
+/counter/counter
+/chatvotes/chatvotes
