@@ -2,12 +2,40 @@ package main
 
 import (
 	"context"
+	"flag"
+	"log"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func main() {}
+func main() {
+	var (
+		addr = flag.String("addr", ":8080", "endpoint address")
+		mgo  = flag.String("mongo", "mongodb://localhost:27017", "MongoDB address")
+	)
+	log.Println("Dialing mongo", *mgo)
+	db, err := mongo.Connect(context.Background(), options.Client().ApplyURI(*mgo))
+	if err != nil {
+		log.Fatal("Failed to connect to mongo:", err)
+	}
+	defer db.Disconnect(context.Background())
+
+	s := &Server{
+		db: db,
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/polls/", withCORS(withAPIKey(s.handlePolls)))
+	log.Println("Starting server on", *addr)
+	http.ListenAndServe(*addr, mux)
+	log.Println("Stopping")
+}
+
+// Server is the API server
+type Server struct {
+	db *mongo.Client
+}
 
 type contextKey struct {
 	name string

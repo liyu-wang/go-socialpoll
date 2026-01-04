@@ -100,6 +100,23 @@ use ballots
 db.polls.find().pretty()
 ```
 
+## verify api with curl
+
+``` bash
+curl -X GET http://localhost:8080/polls/ \
+  -H "X-API-Key: abc123"
+
+curl -X GET http://localhost:8080/polls/6955b7f4cf53b12a54c2b11b \
+  -H "X-API-Key: abc123"
+
+curl --data '{"title":"test","options":["one","two","three"]}' \
+  -X POST http://localhost:8080/polls/ \
+  -H "X-API-Key: abc123"
+
+curl -X DELETE http://localhost:8080/polls/695a4a4a76f401f82ada14ca \
+  -H "X-API-Key: abc123"
+```
+
 ## start service
 
 ```bash
